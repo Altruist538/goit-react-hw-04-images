@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { fetchQuizzes } from './api';
@@ -6,67 +6,55 @@ import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
 const localStorageKey = 'quiz-query';
 const perPage = 12;
-export class App extends Component {
-  state = {
-    query: '',
-    images: [],
-    loading: false,
-    page: 1,
-    totalHitsStatus: false,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalHitsStatus, setTotalHitsStatus] = useState(false);
 
-  componentDidMount() {
+  useEffect(() => {
     const savedQuery = localStorage.getItem(localStorageKey);
     if (savedQuery !== null) {
-      this.setState({
-        query: JSON.parse(savedQuery),
-      });
+      setQuery(JSON.parse(savedQuery));
     }
-  }
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.query !== this.state.query ||
-      prevState.page !== this.state.page
-    ) {
-      this.getPhotos(this.state.query, this.state.page);
-    }
-  }
-  getPhotos = async (query, page) => {
-    try {
-      this.setState({ loading: true });
-      const quizItems = await fetchQuizzes(query, page);
-      const pagesCount = Math.ceil(quizItems.totalHits / perPage);
-      const status = pagesCount !== page;
+  }, []);
 
-      this.setState({
-        images: [...this.state.images, ...quizItems.hits],
-        loading: false,
-        totalHitsStatus: status,
-      });
-    } catch (error) {
-      console.log(error);
-      this.setState({ loading: false });
+  useEffect(() => {
+    async function getPhotos() {
+      try {
+        setLoading(true);
+        const quizItems = await fetchQuizzes(query, page);
+        const pagesCount = Math.ceil(quizItems.totalHits / perPage);
+        const status = pagesCount !== page;
+        setImages([...images, ...quizItems.hits]);
+        setLoading(false);
+        setTotalHitsStatus(status);
+      } catch (error) {
+        console.log(error);
+        setLoading(false);
+      }
     }
-  };
+    getPhotos();
+  }, [page, query]);
 
-  changeQuery = newQuery => {
-    this.setState({ query: newQuery, images: [], loading: false, page: 1 });
+  const changeQuery = newQuery => {
+    setQuery(newQuery);
+    setImages([]);
+    setLoading(false);
+    setPage(1);
     localStorage.setItem(localStorageKey, JSON.stringify(newQuery));
   };
-  pageUp = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
 
-  render() {
-    return (
-      <>
-        <Searchbar submitForm={this.changeQuery} />
-        <ImageGallery arrayImages={this.state.images} />
-        {this.state.loading && <Loader />}
-        {this.state.totalHitsStatus && this.state.images.length !== 0 && (
-          <Button onClick={this.pageUp} />
-        )}
-      </>
-    );
-  }
-}
+  const pageUp = () => {
+    setPage(prevPage => prevPage + 1);
+  };
+  return (
+    <>
+      <Searchbar submitForm={changeQuery} />
+      <ImageGallery arrayImages={images} />
+      {loading && <Loader />}
+      {totalHitsStatus && images.length !== 0 && <Button onClick={pageUp} />}
+    </>
+  );
+};
