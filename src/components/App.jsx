@@ -27,7 +27,7 @@ export const App = () => {
         const quizItems = await fetchQuizzes(query, page);
         const pagesCount = Math.ceil(quizItems.totalHits / perPage);
         const status = pagesCount !== page;
-        setImages([...images, ...quizItems.hits]);
+        setImages(prevImage => [...prevImage, ...quizItems.hits]);
         setLoading(false);
         setTotalHitsStatus(status);
       } catch (error) {
