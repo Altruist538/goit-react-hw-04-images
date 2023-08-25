@@ -6,6 +6,7 @@ import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
 const localStorageKey = 'quiz-query';
 const perPage = 12;
+
 export const App = () => {
   const [query, setQuery] = useState('');
   const [images, setImages] = useState([]);
@@ -21,6 +22,9 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
+    if (!query) {
+      return;
+    }
     async function getPhotos() {
       try {
         setLoading(true);
